@@ -28,7 +28,6 @@ export default function ChatWindow({ model }) {
     
     if (!input.trim()) return;
 
-    // Add user message
     const userMessage = {
       id: messages.length + 1,
       type: 'user',
@@ -54,15 +53,15 @@ export default function ChatWindow({ model }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col overflow-hidden bg-primary">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 1 && messages[0].type === 'bot' && messages[0].content === 'How can I help you today?' ? (
           // Empty State
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
-              <h2 className="text-4xl font-bold text-black mb-2">How can I help you?</h2>
-              <p className="text-gray-600">Ask me anything about image analysis, vision tasks, or upload an image to analyze.</p>
+              <h2 className="text-4xl font-bold text-light mb-2">How can I help you?</h2>
+              <p className="text-text-secondary">Ask me anything about image analysis, vision tasks, or upload an image to analyze.</p>
             </div>
           </div>
         ) : (
@@ -72,11 +71,11 @@ export default function ChatWindow({ model }) {
         )}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-2xl">
+            <div className="bg-surface rounded-lg px-4 py-3 max-w-2xl">
               <div className="flex gap-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 bg-text-secondary rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-text-secondary rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-text-secondary rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
               </div>
             </div>
           </div>
@@ -85,7 +84,7 @@ export default function ChatWindow({ model }) {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 p-6 bg-white">
+      <div className="border-t border-border p-6 bg-primary">
         <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto">
           <div className="flex gap-3">
             <input
@@ -93,13 +92,13 @@ export default function ChatWindow({ model }) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent bg-white text-black placeholder-gray-500"
+              className="flex-1 px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-secondary text-light placeholder-text-secondary"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="p-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3 bg-accent text-primary rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>

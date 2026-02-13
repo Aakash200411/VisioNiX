@@ -6,14 +6,14 @@ export default function ExtractionCard({ extraction, isSelected, onSelect, onDel
       onClick={onSelect}
       className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
         isSelected
-          ? 'border-primary bg-blue-50 shadow-lg'
-          : 'border-border bg-white hover:border-primary hover:shadow-md'
+          ? 'border-accent bg-hover shadow-lg'
+          : 'border-border bg-secondary hover:border-accent hover:shadow-md'
       }`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="font-semibold text-dark truncate">{extraction.image_name}</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="font-semibold text-light truncate">{extraction.image_name}</h3>
+          <p className="text-xs text-text-secondary">
             {new Date(extraction.timestamp).toLocaleDateString()} {new Date(extraction.timestamp).toLocaleTimeString()}
           </p>
         </div>
@@ -22,7 +22,7 @@ export default function ExtractionCard({ extraction, isSelected, onSelect, onDel
             e.stopPropagation();
             onDelete(extraction.id);
           }}
-          className="text-gray-400 hover:text-error transition-colors"
+          className="text-text-secondary hover:text-error transition-colors"
         >
           <Trash2 size={18} />
         </button>

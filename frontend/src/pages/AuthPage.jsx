@@ -45,35 +45,35 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-primary px-4">
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-xl font-bold text-white">VN</span>
+          <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-xl font-bold text-primary">VN</span>
           </div>
-          <h1 className="text-2xl font-bold text-black mb-2">VisioNiX</h1>
-          <p className="text-sm text-gray-600">Vision & Image Analysis Platform</p>
+          <h1 className="text-2xl font-bold text-light mb-2">VisioNiX</h1>
+          <p className="text-sm text-text-secondary">Vision & Image Analysis Platform</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+        <form onSubmit={handleSubmit} className="space-y-4 mb-6 bg-secondary p-6 rounded-lg">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-black mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-light mb-2">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={18} />
+                <User className="absolute left-3 top-3 text-text-secondary" size={18} />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-primary text-light placeholder-text-secondary"
                   placeholder="John Doe"
                   disabled={loading}
                 />
@@ -82,14 +82,14 @@ export default function AuthPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-black mb-2">Email</label>
+            <label className="block text-sm font-medium text-light mb-2">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+              <Mail className="absolute left-3 top-3 text-text-secondary" size={18} />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-primary text-light placeholder-text-secondary"
                 placeholder="you@example.com"
                 required
                 disabled={loading}
@@ -98,14 +98,14 @@ export default function AuthPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-black mb-2">Password</label>
+            <label className="block text-sm font-medium text-light mb-2">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+              <Lock className="absolute left-3 top-3 text-text-secondary" size={18} />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-primary text-light placeholder-text-secondary"
                 placeholder="••••••••"
                 required
                 disabled={loading}
@@ -116,14 +116,14 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-semibold py-2 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-accent text-primary font-semibold py-2 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
         {/* Toggle */}
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-sm text-text-secondary">
           {isLogin ? "Don't have an account?" : 'Already have an account?'}
           <button
             onClick={() => {
@@ -133,7 +133,7 @@ export default function AuthPage() {
               setEmail('');
               setPassword('');
             }}
-            className="ml-2 text-black font-semibold hover:underline bg-none border-none cursor-pointer p-0"
+            className="ml-2 text-accent font-semibold hover:underline bg-none border-none cursor-pointer p-0"
             disabled={loading}
           >
             {isLogin ? 'Sign Up' : 'Sign In'}

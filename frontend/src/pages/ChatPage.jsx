@@ -1,5 +1,4 @@
 import { useAuth } from '../hooks/useAuth';
-import { useChat } from '../hooks/useChat';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Plus, MessageSquare, Trash2, LogOut, Image, ChevronDown, Search } from 'lucide-react';
@@ -7,10 +6,10 @@ import ChatWindow from '../components/ChatWindow';
 
 export default function ChatPage() {
   const { user, logout } = useAuth();
-  const { chats, createChat, deleteChat, currentChatId, selectChat } = useChat();
   const navigate = useNavigate();
   const [selectedModel, setSelectedModel] = useState('normal');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [chats, setChats] = useState([]);
 
   useEffect(() => {
     if (!user) {
@@ -24,7 +23,16 @@ export default function ChatPage() {
   };
 
   const handleNewChat = () => {
-    createChat();
+    const newChat = {
+      id: Date.now().toString(),
+      title: 'New Chat',
+      timestamp: new Date(),
+    };
+    setChats(prev => [newChat, ...prev]);
+  };
+
+  const handleDeleteChat = (id) => {
+    setChats(prev => prev.filter(chat => chat.id !== id));
   };
 
   const models = [
@@ -41,14 +49,14 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-primary">
       {/* Left Sidebar - ChatGPT Style */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
+      <div className="w-64 bg-secondary border-r border-border flex flex-col h-screen">
         {/* New Chat Button */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-border">
           <button
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-black font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-hover transition-colors text-light font-medium"
           >
             <Plus size={20} />
             New chat
@@ -56,56 +64,48 @@ export default function ChatPage() {
         </div>
 
         {/* Search Chats */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-border">
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-3 text-text-secondary" size={18} />
             <input
               type="text"
               placeholder="Search chats..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent text-sm bg-primary text-light placeholder-text-secondary"
             />
           </div>
         </div>
 
         {/* Chat History */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          <div className="text-xs font-semibold text-gray-600 uppercase px-2 mb-3">Recent</div>
+          <div className="text-xs font-semibold text-text-secondary uppercase px-2 mb-3">Recent</div>
           {chats && chats.length > 0 ? (
             chats.map((chat) => (
               <div
                 key={chat.id}
-                onClick={() => selectChat(chat.id)}
-                className={`p-3 rounded-lg cursor-pointer flex items-center justify-between group transition-colors ${
-                  currentChatId === chat.id
-                    ? 'bg-gray-200 text-black'
-                    : 'hover:bg-gray-100 text-gray-800'
-                }`}
+                className="p-3 rounded-lg cursor-pointer flex items-center justify-between group hover:bg-hover transition-colors text-light"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <MessageSquare size={16} className="flex-shrink-0" />
                   <span className="text-sm truncate">{chat.title}</span>
                 </div>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteChat(chat.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-300 rounded transition-all"
+                  onClick={() => handleDeleteChat(chat.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-border rounded transition-all"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
             ))
           ) : (
-            <div className="text-sm text-gray-500 text-center py-8">No chats yet</div>
+            <div className="text-sm text-text-secondary text-center py-8">No chats yet</div>
           )}
         </div>
 
         {/* User Section */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-border">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-black hover:bg-gray-100 rounded-lg transition-colors font-medium text-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-light hover:bg-hover rounded-lg transition-colors font-medium text-sm"
           >
             <LogOut size={18} />
             Logout
@@ -114,23 +114,23 @@ export default function ChatPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex-1 flex flex-col bg-primary">
         {/* Header with Model Dropdown */}
-        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-primary">
           <div></div>
 
           {/* Model Dropdown - Center */}
           <div className="relative">
             <button
               onClick={() => setShowModelDropdown(!showModelDropdown)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-hover transition-colors text-light"
             >
-              <span className="font-medium text-black">{currentModel?.label}</span>
-              <ChevronDown size={18} className="text-gray-600" />
+              <span className="font-medium">{currentModel?.label}</span>
+              <ChevronDown size={18} className="text-text-secondary" />
             </button>
 
             {showModelDropdown && (
-              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-40 bg-secondary border border-border rounded-lg shadow-lg z-50">
                 {models.map(model => (
                   <button
                     key={model.id}
@@ -138,8 +138,8 @@ export default function ChatPage() {
                       setSelectedModel(model.id);
                       setShowModelDropdown(false);
                     }}
-                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 text-sm ${
-                      selectedModel === model.id ? 'bg-gray-100 font-semibold' : ''
+                    className={`w-full px-4 py-2 text-left hover:bg-hover transition-colors border-b border-border last:border-b-0 text-sm text-light ${
+                      selectedModel === model.id ? 'bg-hover font-semibold text-accent' : ''
                     }`}
                   >
                     {model.label}
@@ -153,10 +153,10 @@ export default function ChatPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/extractions')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-hover rounded-lg transition-colors"
               title="View Extractions"
             >
-              <Image size={20} className="text-gray-700" />
+              <Image size={20} className="text-light" />
             </button>
           </div>
         </div>

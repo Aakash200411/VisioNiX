@@ -5,7 +5,7 @@ export default function Message({ message }) {
     <div className={`flex gap-4 mb-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-        isUser ? 'bg-black text-white' : 'bg-gray-100 text-black'
+        isUser ? 'bg-accent text-primary' : 'bg-surface text-light'
       }`}>
         {isUser ? 'U' : 'A'}
       </div>
@@ -14,8 +14,8 @@ export default function Message({ message }) {
       <div className={`flex-1 max-w-2xl ${isUser ? 'text-right' : 'text-left'}`}>
         <div className={`inline-block px-4 py-2 rounded-lg ${
           isUser
-            ? 'bg-black text-white rounded-br-none'
-            : 'bg-gray-100 text-black rounded-bl-none'
+            ? 'bg-accent text-primary rounded-br-none'
+            : 'bg-surface text-light rounded-bl-none'
         }`}>
           <p className="text-sm leading-relaxed">{message.content}</p>
         </div>
