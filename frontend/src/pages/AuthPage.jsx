@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Mail, Lock, User, Loader } from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,103 +21,59 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        const result = await login(email, password);
-        if (result.success) {
-          navigate('/chat');
-        } else {
-          setError(result.error || 'Login failed');
-        }
-      } else {
-        if (!name.trim()) {
-          setError('Name is required');
+        if (!email || !password) {
+          setError('Please fill in all fields');
           setLoading(false);
           return;
         }
-        const result = await signup(email, password, name);
-        if (result.success) {
-          navigate('/chat');
-        } else {
-          setError(result.error || 'Signup failed');
+        await login(email, password);
+        navigate('/chat');
+      } else {
+        if (!name || !email || !password) {
+          setError('Please fill in all fields');
+          setLoading(false);
+          return;
         }
+        await signup(email, password, name);
+        navigate('/chat');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1rem',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '0.5rem',
-        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
-        padding: '2rem',
-        width: '100%',
-        maxWidth: '28rem'
-      }}>
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+      <div className="w-full max-w-sm">
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '4rem',
-            height: '4rem',
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-            borderRadius: '0.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1rem',
-          }}>
-            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>VN</span>
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-xl font-bold text-white">VN</span>
           </div>
-          <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>VisioNiX</h1>
-          <p style={{ color: '#9ca3af' }}>Vision & Image Analysis Platform</p>
+          <h1 className="text-2xl font-bold text-black mb-2">VisioNiX</h1>
+          <p className="text-sm text-gray-600">Vision & Image Analysis Platform</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
           {error && (
-            <div style={{
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid #ef4444',
-              color: '#ef4444',
-              padding: '0.5rem 1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.875rem'
-            }}>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           {!isLogin && (
-            <div style={{ position: 'relative' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.5rem' }}>Full Name</label>
-              <div style={{ position: 'relative' }}>
-                <User style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} size={20} />
+            <div>
+              <label className="block text-sm font-medium text-black mb-2">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 text-gray-400" size={18} />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    paddingLeft: '2.5rem',
-                    paddingRight: '1rem',
-                    padding: '0.5rem 1rem 0.5rem 2.5rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    outline: 'none',
-                  }}
-                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #6366f1'}
-                  onBlur={(e) => e.target.style.boxShadow = 'none'}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                   placeholder="John Doe"
                   disabled={loading}
                 />
@@ -125,23 +81,15 @@ export default function AuthPage() {
             </div>
           )}
 
-          <div style={{ position: 'relative' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.5rem' }}>Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} size={20} />
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 1rem 0.5rem 2.5rem',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
-                  outline: 'none',
-                }}
-                onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #6366f1'}
-                onBlur={(e) => e.target.style.boxShadow = 'none'}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                 placeholder="you@example.com"
                 required
                 disabled={loading}
@@ -149,23 +97,15 @@ export default function AuthPage() {
             </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.5rem' }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} size={20} />
+          <div>
+            <label className="block text-sm font-medium text-black mb-2">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 1rem 0.5rem 2.5rem',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
-                  outline: 'none',
-                }}
-                onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #6366f1'}
-                onBlur={(e) => e.target.style.boxShadow = 'none'}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                 placeholder="••••••••"
                 required
                 disabled={loading}
@@ -176,58 +116,28 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            style={{
-              width: '100%',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              color: 'white',
-              fontWeight: '600',
-              padding: '0.5rem',
-              borderRadius: '0.5rem',
-              border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.5 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              fontSize: '1rem',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => !loading && (e.target.style.boxShadow = '0 10px 25px rgba(99, 102, 241, 0.3)')}
-            onMouseLeave={(e) => e.target.style.boxShadow = 'none'}
+            className="w-full bg-black text-white font-semibold py-2 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
         {/* Toggle */}
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <p style={{ color: '#4b5563' }}>
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-                setName('');
-                setEmail('');
-                setPassword('');
-              }}
-              style={{
-                marginLeft: '0.5rem',
-                color: '#6366f1',
-                fontWeight: '600',
-                background: 'none',
-                border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                textDecoration: 'none',
-              }}
-              onMouseEnter={(e) => !loading && (e.target.style.textDecoration = 'underline')}
-              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
-              disabled={loading}
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
+        <div className="text-center text-sm text-gray-600">
+          {isLogin ? "Don't have an account?" : 'Already have an account?'}
+          <button
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+              setName('');
+              setEmail('');
+              setPassword('');
+            }}
+            className="ml-2 text-black font-semibold hover:underline bg-none border-none cursor-pointer p-0"
+            disabled={loading}
+          >
+            {isLogin ? 'Sign Up' : 'Sign In'}
+          </button>
         </div>
       </div>
     </div>

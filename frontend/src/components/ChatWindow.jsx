@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { Send, Loader } from 'lucide-react';
-import { useChat } from '../hooks/useChat';
+import { useState, useRef, useEffect } from 'react';
+import { Send } from 'lucide-react';
 import Message from './Message';
 
-export default function ChatWindow() {
+export default function ChatWindow({ model }) {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      type: 'bot',
+      content: 'How can I help you today?',
+      timestamp: new Date(),
+    },
+  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const { getCurrentChat, addMessage, currentChatId, selectedModel, updateChatTitle } = useChat();
-
-  const currentChat = getCurrentChat();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -17,97 +21,89 @@ export default function ChatWindow() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [currentChat?.messages]);
+  }, [messages]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !currentChat) return;
+    
+    if (!input.trim()) return;
 
+    // Add user message
     const userMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input
+      id: messages.length + 1,
+      type: 'user',
+      content: input,
+      timestamp: new Date(),
     };
 
-    addMessage(currentChatId, userMessage);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
-    // Update chat title if it's the first message
-    if (currentChat.messages.length === 0) {
-      const title = input.substring(0, 30) + (input.length > 30 ? '...' : '');
-      updateChatTitle(currentChatId, title);
-    }
-
-    // Simulate AI response
+    // Simulate bot response
     setTimeout(() => {
-      const assistantMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `This is a response using the ${selectedModel} model. In a real implementation, this would connect to the backend API for actual image analysis.`
+      const botMessage = {
+        id: messages.length + 2,
+        type: 'bot',
+        content: `Analyzing with ${model} model...`,
+        timestamp: new Date(),
       };
-      addMessage(currentChatId, assistantMessage);
+      setMessages(prev => [...prev, botMessage]);
       setLoading(false);
     }, 1000);
   };
 
-  if (!currentChat) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-light">
-        <p className="text-gray-500">No chat selected</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 flex flex-col bg-light">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {currentChat.messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {messages.length === 1 && messages[0].type === 'bot' && messages[0].content === 'How can I help you today?' ? (
+          // Empty State
+          <div className="h-full flex items-center justify-center">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-dark mb-2">Start a new conversation</h2>
-              <p className="text-gray-500 mb-4">Analyze images using AI models and extract visual data</p>
+              <h2 className="text-4xl font-bold text-black mb-2">How can I help you?</h2>
+              <p className="text-gray-600">Ask me anything about image analysis, vision tasks, or upload an image to analyze.</p>
             </div>
           </div>
         ) : (
-          <>
-            {currentChat.messages.map(message => (
-              <Message key={message.id} message={message} />
-            ))}
-            {loading && (
-              <div className="flex gap-3 mb-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center">
-                  <Loader size={18} className="animate-spin" />
-                </div>
-                <div className="bg-light border border-border rounded-lg px-4 py-2 rounded-bl-none">
-                  <p className="text-sm text-gray-500">Thinking...</p>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </>
+          messages.map(msg => (
+            <Message key={msg.id} message={msg} />
+          ))
         )}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-2xl">
+              <div className="flex gap-2">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
-      <div className="p-6 border-t border-border bg-white">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Upload an image or describe what you want to analyze..."
-            className="flex-1 px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="bg-primary hover:bg-secondary text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
-          </button>
+      <div className="border-t border-gray-200 p-6 bg-white">
+        <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask anything"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent bg-white text-black placeholder-gray-500"
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="p-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send size={20} />
+            </button>
+          </div>
         </form>
       </div>
     </div>
