@@ -48,35 +48,76 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-secondary to-primary flex items-center justify-center px-4">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #6366f1 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '0.5rem',
+        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+        padding: '2rem',
+        width: '100%',
+        maxWidth: '28rem'
+      }}>
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl font-bold text-white">VN</span>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{
+            width: '4rem',
+            height: '4rem',
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            borderRadius: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1rem',
+          }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>VN</span>
           </div>
-          <h1 className="text-3xl font-bold text-dark mb-2">VisioNiX</h1>
-          <p className="text-gray-500">Vision & Image Analysis Platform</p>
+          <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>VisioNiX</h1>
+          <p style={{ color: '#9ca3af' }}>Vision & Image Analysis Platform</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {error && (
-            <div className="bg-error bg-opacity-10 border border-error text-error px-4 py-2 rounded-lg text-sm">
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid #ef4444',
+              color: '#ef4444',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              fontSize: '0.875rem'
+            }}>
               {error}
             </div>
           )}
 
           {!isLogin && (
-            <div className="relative">
-              <label className="block text-sm font-medium text-dark mb-2">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={20} />
+            <div style={{ position: 'relative' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.5rem' }}>Full Name</label>
+              <div style={{ position: 'relative' }}>
+                <User style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} size={20} />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  style={{
+                    width: '100%',
+                    paddingLeft: '2.5rem',
+                    paddingRight: '1rem',
+                    padding: '0.5rem 1rem 0.5rem 2.5rem',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #6366f1'}
+                  onBlur={(e) => e.target.style.boxShadow = 'none'}
                   placeholder="John Doe"
                   disabled={loading}
                 />
@@ -84,15 +125,23 @@ export default function AuthPage() {
             </div>
           )}
 
-          <div className="relative">
-            <label className="block text-sm font-medium text-dark mb-2">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
+          <div style={{ position: 'relative' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.5rem' }}>Email</label>
+            <div style={{ position: 'relative' }}>
+              <Mail style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} size={20} />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem 0.5rem 2.5rem',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  outline: 'none',
+                }}
+                onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #6366f1'}
+                onBlur={(e) => e.target.style.boxShadow = 'none'}
                 placeholder="you@example.com"
                 required
                 disabled={loading}
@@ -100,15 +149,23 @@ export default function AuthPage() {
             </div>
           </div>
 
-          <div className="relative">
-            <label className="block text-sm font-medium text-dark mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+          <div style={{ position: 'relative' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#1f2937', marginBottom: '0.5rem' }}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <Lock style={{ position: 'absolute', left: '0.75rem', top: '0.75rem', color: '#9ca3af' }} size={20} />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                style={{
+                  width: '100%',
+                  padding: '0.5rem 1rem 0.5rem 2.5rem',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  outline: 'none',
+                }}
+                onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #6366f1'}
+                onBlur={(e) => e.target.style.boxShadow = 'none'}
                 placeholder="••••••••"
                 required
                 disabled={loading}
@@ -119,16 +176,33 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-primary to-secondary text-white font-semibold py-2 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              width: '100%',
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              color: 'white',
+              fontWeight: '600',
+              padding: '0.5rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              fontSize: '1rem',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => !loading && (e.target.style.boxShadow = '0 10px 25px rgba(99, 102, 241, 0.3)')}
+            onMouseLeave={(e) => e.target.style.boxShadow = 'none'}
           >
-            {loading && <Loader size={18} className="animate-spin" />}
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
         {/* Toggle */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <p style={{ color: '#4b5563' }}>
             {isLogin ? "Don't have an account?" : 'Already have an account?'}
             <button
               onClick={() => {
@@ -138,7 +212,17 @@ export default function AuthPage() {
                 setEmail('');
                 setPassword('');
               }}
-              className="ml-2 text-primary font-semibold hover:underline"
+              style={{
+                marginLeft: '0.5rem',
+                color: '#6366f1',
+                fontWeight: '600',
+                background: 'none',
+                border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => !loading && (e.target.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
               disabled={loading}
             >
               {isLogin ? 'Sign Up' : 'Sign In'}
