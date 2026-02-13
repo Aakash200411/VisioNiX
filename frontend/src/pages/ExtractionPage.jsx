@@ -45,7 +45,7 @@ export default function ExtractionPage() {
             </p>
             <button
               onClick={() => navigate('/chat')}
-              className="inline-flex items-center gap-2 px-6 py-2 bg-accent text-primary rounded-lg hover:opacity-90 transition-opacity font-medium"
+              className="inline-flex items-center gap-2 px-6 py-2 bg-surface-light text-light rounded-lg hover:bg-hover transition-colors font-medium"
             >
               Go to Chat
             </button>

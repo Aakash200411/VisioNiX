@@ -70,7 +70,7 @@ export default function ChatPage() {
             <input
               type="text"
               placeholder="Search chats..."
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent text-sm bg-primary text-light placeholder-text-secondary"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-surface-light focus:border-transparent text-sm bg-primary text-light placeholder-text-secondary"
             />
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function ChatPage() {
                       setShowModelDropdown(false);
                     }}
                     className={`w-full px-4 py-2 text-left hover:bg-hover transition-colors border-b border-border last:border-b-0 text-sm text-light ${
-                      selectedModel === model.id ? 'bg-hover font-semibold text-accent' : ''
+                      selectedModel === model.id ? 'bg-hover font-semibold' : ''
                     }`}
                   >
                     {model.label}

@@ -43,7 +43,7 @@ export default function ExtractionDetails({ extraction }) {
       <div className="flex gap-2">
         <button
           onClick={() => copyToClipboard(JSON.stringify(extraction, null, 2))}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-primary rounded-lg hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 px-4 py-2 bg-surface-light text-light rounded-lg hover:bg-hover transition-colors"
         >
           <Copy size={18} />
           {copied ? 'Copied!' : 'Copy JSON'}
@@ -71,7 +71,7 @@ export default function ExtractionDetails({ extraction }) {
             {extraction.objects.map((obj, idx) => (
               <span
                 key={idx}
-                className="px-3 py-1 bg-accent bg-opacity-20 text-accent rounded-full text-sm font-medium"
+                className="px-3 py-1 bg-surface-light bg-opacity-20 text-light rounded-full text-sm font-medium"
               >
                 {obj}
               </span>
@@ -90,7 +90,7 @@ export default function ExtractionDetails({ extraction }) {
             {extraction.scene_labels.map((label, idx) => (
               <span
                 key={idx}
-                className="px-3 py-1 bg-accent bg-opacity-20 text-accent rounded-full text-sm font-medium"
+                className="px-3 py-1 bg-surface-light bg-opacity-20 text-light rounded-full text-sm font-medium"
               >
                 {label}
               </span>
@@ -157,7 +157,7 @@ export default function ExtractionDetails({ extraction }) {
                 </div>
                 <div className="w-full bg-primary rounded-full h-2">
                   <div
-                    className="bg-accent h-2 rounded-full"
+                    className="bg-surface-light h-2 rounded-full"
                     style={{ width: `${feature * 100}%` }}
                   />
                 </div>
@@ -178,7 +178,7 @@ export default function ExtractionDetails({ extraction }) {
           </p>
           <p className="text-text-secondary">
             <span className="font-medium">Path:</span>{' '}
-            <code className="bg-primary px-2 py-1 rounded text-xs break-all text-accent">{extraction.clip_embedding_path}</code>
+            <code className="bg-primary px-2 py-1 rounded text-xs break-all text-text-secondary">{extraction.clip_embedding_path}</code>
           </p>
         </div>
       </div>

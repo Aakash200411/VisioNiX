@@ -49,11 +49,11 @@ export default function AuthPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-xl font-bold text-primary">VN</span>
+          <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-xl font-bold text-light">VN</span>
           </div>
           <h1 className="text-2xl font-bold text-light mb-2">VisioNiX</h1>
-          <p className="text-sm text-text-secondary">Vision & Image Analysis Platform</p>
+          <p className="text-sm text-text-tertiary">Vision & Image Analysis Platform</p>
         </div>
 
         {/* Form */}
@@ -73,7 +73,7 @@ export default function AuthPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent bg-primary text-light placeholder-text-secondary"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-surface-light focus:border-transparent bg-primary text-light placeholder-text-secondary"
                   placeholder="John Doe"
                   disabled={loading}
                 />
@@ -116,7 +116,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent text-primary font-semibold py-2 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-surface-light text-light font-semibold py-2 rounded-lg hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
@@ -133,7 +133,7 @@ export default function AuthPage() {
               setEmail('');
               setPassword('');
             }}
-            className="ml-2 text-accent font-semibold hover:underline bg-none border-none cursor-pointer p-0"
+            className="ml-2 text-light font-semibold hover:underline bg-none border-none cursor-pointer p-0"
             disabled={loading}
           >
             {isLogin ? 'Sign Up' : 'Sign In'}
