@@ -1,17 +1,17 @@
-import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, MessageSquare, Trash2, LogOut, Image, ChevronDown, Search } from 'lucide-react';
+
+import { useAuth } from '../hooks/useAuth';
 import ChatWindow from '../components/ChatWindow';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 
 export default function ChatPage() {
-  const { user, logout, token } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+
   const [selectedModel, setSelectedModel] = useState('normal');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +26,8 @@ export default function ChatPage() {
 
   const loadRooms = useCallback(async () => {
     if (!token) {
+      setChats([]);
+      setCurrentChatId(null);
       return;
     }
 
@@ -35,7 +37,6 @@ export default function ChatPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch rooms');
@@ -44,20 +45,11 @@ export default function ChatPage() {
       const rooms = data.rooms || [];
       setChats(rooms);
       setCurrentChatId((prev) => {
-<<<<<<< Updated upstream
-  if (prev && rooms.some((room) => room.id === prev)) {
-    return prev;
-  }
-  return rooms[0]?.id || null;
-});
-
-=======
         if (prev && rooms.some((room) => room.id === prev)) {
           return prev;
         }
         return rooms[0]?.id || null;
       });
->>>>>>> Stashed changes
     } catch {
       setChats([]);
       setCurrentChatId(null);
@@ -66,7 +58,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     loadRooms();
-  }, []);
+  }, [loadRooms]);
 
   const handleLogout = () => {
     logout();
@@ -84,7 +76,6 @@ export default function ChatPage() {
         },
         body: JSON.stringify({ title: 'New Chat' }),
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create chat');
@@ -108,7 +99,6 @@ export default function ChatPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to delete chat');
@@ -130,7 +120,6 @@ export default function ChatPage() {
     { id: 'normal', label: 'Normal' },
     { id: 'qwen3-vl:8b', label: 'Qwen3-VL' },
   ];
-
   const currentModel = models.find((m) => m.id === selectedModel);
 
   const filteredChats = chats.filter((chat) =>
@@ -211,7 +200,7 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col bg-primary">
         <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-primary">
-          <div></div>
+          <div />
 
           <div className="relative">
             <button
@@ -253,7 +242,6 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat Window */}
         <ChatWindow model={selectedModel} currentChatId={currentChatId} />
       </div>
     </div>
