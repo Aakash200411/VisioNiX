@@ -1,7 +1,8 @@
-import { useAuth } from '../hooks/useAuth';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Plus, MessageSquare, Trash2, LogOut, Image, ChevronDown, Search } from 'lucide-react';
+
+import { useAuth } from '../hooks/useAuth';
 import ChatWindow from '../components/ChatWindow';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
@@ -9,8 +10,11 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 export default function ChatPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+
   const [selectedModel, setSelectedModel] = useState('normal');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
 
@@ -22,6 +26,8 @@ export default function ChatPage() {
 
   const loadRooms = useCallback(async () => {
     if (!token) {
+      setChats([]);
+      setCurrentChatId(null);
       return;
     }
 
@@ -31,7 +37,6 @@ export default function ChatPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch rooms');
@@ -39,7 +44,7 @@ export default function ChatPage() {
 
       const rooms = data.rooms || [];
       setChats(rooms);
-      setActiveChatId((prev) => {
+      setCurrentChatId((prev) => {
         if (prev && rooms.some((room) => room.id === prev)) {
           return prev;
         }
@@ -47,7 +52,7 @@ export default function ChatPage() {
       });
     } catch {
       setChats([]);
-      setActiveChatId(null);
+      setCurrentChatId(null);
     }
   }, [token]);
 
@@ -60,48 +65,66 @@ export default function ChatPage() {
     navigate('/');
   };
 
-  const handleNewChat = () => {
-    const newChat = {
-      id: Date.now().toString(),
-      title: 'New Chat',
-      timestamp: new Date(),
-    };
-    setChats(prev => [newChat, ...prev]);
-    setCurrentChatId(newChat.id);
+  const handleNewChat = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${apiBaseUrl}/chat/rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: 'New Chat' }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create chat');
+      }
+
+      const room = data.room;
+      if (!room) return;
+      setChats((prev) => [room, ...prev]);
+      setCurrentChatId(room.id);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleDeleteChat = (id) => {
-    setChats(prev => {
-      const updated = prev.filter(chat => chat.id !== id);
-      if (currentChatId === id) {
-        setCurrentChatId(updated.length > 0 ? updated[0].id : null);
+  const handleDeleteChat = async (id) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${apiBaseUrl}/chat/rooms/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete chat');
       }
-      return updated;
-    });
+
+      setChats((prev) => {
+        const updated = prev.filter((chat) => chat.id !== id);
+        if (currentChatId === id) {
+          setCurrentChatId(updated.length > 0 ? updated[0].id : null);
+        }
+        return updated;
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const models = [
     { id: 'normal', label: 'Normal' },
     { id: 'qwen3-vl:8b', label: 'Qwen3-VL' },
   ];
-
   const currentModel = models.find((m) => m.id === selectedModel);
 
   const filteredChats = chats.filter((chat) =>
     (chat.title || 'Untitled Chat').toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  useEffect(() => {
-    if (user && chats.length === 0) {
-      const initialChat = {
-        id: Date.now().toString(),
-        title: 'New Chat',
-        timestamp: new Date(),
-      };
-      setChats([initialChat]);
-      setCurrentChatId(initialChat.id);
-    }
-  }, [user, chats.length]);
 
   if (!user) {
     return null;
@@ -177,7 +200,7 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col bg-primary">
         <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-primary">
-          <div></div>
+          <div />
 
           <div className="relative">
             <button
@@ -219,7 +242,6 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat Window */}
         <ChatWindow model={selectedModel} currentChatId={currentChatId} />
       </div>
     </div>
