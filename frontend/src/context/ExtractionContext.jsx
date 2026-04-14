@@ -44,6 +44,11 @@ export function ExtractionProvider({ children }) {
     return extractions.find(e => e.id === selectedExtraction);
   }, [extractions, selectedExtraction]);
 
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
+
   const refreshExtractions = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -57,7 +62,9 @@ export function ExtractionProvider({ children }) {
 
       for (const prefix of extractionPathPrefixes) {
         try {
-          const response = await fetch(`${apiBaseUrl}${prefix}/extractions`);
+          const response = await fetch(`${apiBaseUrl}${prefix}/extractions`, {
+            headers: getAuthHeaders(),
+          });
           const parsedPayload = await response.json().catch(() => []);
 
           if (!response.ok) {
@@ -108,7 +115,7 @@ export function ExtractionProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
     refreshExtractions();
@@ -130,6 +137,7 @@ export function ExtractionProvider({ children }) {
       try {
         response = await fetch(`${apiBaseUrl}${prefix}/extractions/${id}`, {
           method: 'DELETE',
+          headers: getAuthHeaders(),
         });
 
         if (response.status === 404) {
@@ -163,7 +171,7 @@ export function ExtractionProvider({ children }) {
       });
       return updated;
     });
-  }, [activePathPrefix]);
+  }, [activePathPrefix, getAuthHeaders]);
 
   return (
     <ExtractionContext.Provider value={{

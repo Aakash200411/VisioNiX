@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, LoaderCircle, RefreshCcw, Rocket, RotateCcw } from 'lucide-react';
+import { ArrowLeft, LoaderCircle, RefreshCcw, Rocket, RotateCcw, Trash2 } from 'lucide-react';
 
 import { useAuth } from '../hooks/useAuth';
 
@@ -19,6 +19,7 @@ const initialForm = {
   validation_split: 0.2,
   quality_threshold: 0.6,
   auto_deploy: true,
+  hf_model_repo: '',
   hf_space_slug: '',
   notes: '',
 };
@@ -32,6 +33,7 @@ export default function FineTunePage() {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [deployingJobId, setDeployingJobId] = useState('');
+  const [deletingJobId, setDeletingJobId] = useState('');
   const [result, setResult] = useState(null);
 
   const [jobs, setJobs] = useState([]);
@@ -125,6 +127,7 @@ export default function FineTunePage() {
       validation_split: Number(form.validation_split),
       quality_threshold: Number(form.quality_threshold),
       auto_deploy: Boolean(form.auto_deploy),
+      hf_model_repo: form.hf_model_repo.trim(),
       hf_space_slug: form.hf_space_slug.trim(),
       notes: form.notes.trim(),
     };
@@ -152,8 +155,10 @@ export default function FineTunePage() {
       }
 
       setResult({
-        type: 'success',
-        message: 'Fine-tuning job submitted and worker started.',
+        type: data.duplicate ? 'warning' : 'success',
+        message: data.duplicate
+          ? data.message || 'A matching fine-tuning job is already in progress.'
+          : 'Fine-tuning job submitted. The trained model will be published to Hugging Face automatically.',
         details: data,
       });
       await fetchJobs();
@@ -187,7 +192,7 @@ export default function FineTunePage() {
 
       setResult({
         type: 'success',
-        message: 'Deployment started/completed successfully.',
+        message: 'Hugging Face publish completed.',
         details: data,
       });
       await fetchJobs();
@@ -195,6 +200,58 @@ export default function FineTunePage() {
       setResult({ type: 'error', message: error.message || 'Deployment failed.' });
     } finally {
       setDeployingJobId('');
+    }
+  };
+
+  const handleDelete = async (job) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setResult({ type: 'error', message: 'Please login again.' });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${job.model_name}" from the app? This removes the training job, the model row, and local fine-tuned files.`
+    );
+    if (!confirmed) return;
+
+    const canDeleteRemote = Boolean(job.hf_model_url || job.hf_space_url);
+    const deleteRemote = canDeleteRemote
+      ? window.confirm('Also delete the Hugging Face model repo and hosted inference app for this fine-tune?')
+      : false;
+
+    setDeletingJobId(job.id);
+    setResult(null);
+    try {
+      const response = await fetch(`${apiBaseUrl}/training/jobs/${job.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          delete_remote: deleteRemote,
+          delete_local_artifacts: true,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Delete failed');
+      }
+
+      const warnings = Array.isArray(data.warnings) ? data.warnings.filter(Boolean) : [];
+      setResult({
+        type: warnings.length ? 'warning' : 'success',
+        message: warnings.length
+          ? `Deleted "${job.model_name}" with warnings.`
+          : `Deleted "${job.model_name}".`,
+        details: data,
+      });
+      await fetchJobs();
+    } catch (error) {
+      setResult({ type: 'error', message: error.message || 'Delete failed.' });
+    } finally {
+      setDeletingJobId('');
     }
   };
 
@@ -209,7 +266,7 @@ export default function FineTunePage() {
             <ArrowLeft size={18} />
             Back to Chat
           </button>
-          <h1 className="text-xl font-semibold">Fine-Tuning + Deploy</h1>
+          <h1 className="text-xl font-semibold">Fine-Tuning + Hugging Face</h1>
         </div>
       </div>
 
@@ -334,13 +391,28 @@ export default function FineTunePage() {
               />
             </div>
             <div>
-              <label className="block text-sm mb-2 text-text-secondary">HF Space Slug (optional)</label>
+              <label className="block text-sm mb-2 text-text-secondary">HF Model Repo (optional)</label>
+              <input
+                value={form.hf_model_repo}
+                onChange={(e) => handleChange('hf_model_repo', e.target.value)}
+                placeholder="Bhuvan/my-yolo-model"
+                className="w-full px-3 py-2 rounded-lg bg-primary border border-border focus:outline-none"
+              />
+              <p className="mt-2 text-xs text-text-secondary">
+                Leave blank to auto-create a unique model repo for this fine-tune job.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm mb-2 text-text-secondary">HF Hosted Inference App Slug (optional)</label>
               <input
                 value={form.hf_space_slug}
                 onChange={(e) => handleChange('hf_space_slug', e.target.value)}
-                placeholder="AryanKKate/Model"
+                placeholder="username/my-inference-app"
                 className="w-full px-3 py-2 rounded-lg bg-primary border border-border focus:outline-none"
               />
+              <p className="mt-2 text-xs text-text-secondary">
+                Leave blank to auto-create a unique hosted app for this fine-tune job.
+              </p>
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm mb-2 text-text-secondary">Notes</label>
@@ -360,7 +432,7 @@ export default function FineTunePage() {
                 onChange={(e) => handleChange('auto_deploy', e.target.checked)}
               />
               <label htmlFor="auto_deploy" className="text-sm text-text-secondary">
-                Auto deploy to Hugging Face Space after training
+                Auto publish trained weights and create a hosted inference app on Hugging Face after training
               </label>
             </div>
           </div>
@@ -427,15 +499,20 @@ export default function FineTunePage() {
                     <th className="py-2 pr-3">Model</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2 pr-3">Metric</th>
-                    <th className="py-2 pr-3">HF Space</th>
+                    <th className="py-2 pr-3">HF Model</th>
+                    <th className="py-2 pr-3">Hosted Inference App</th>
                     <th className="py-2 pr-3">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {jobs.map((job) => {
+                    const normalizedStatus = (job.status || '').toLowerCase();
                     const canDeploy =
-                      !job.hf_space_url &&
-                      ['trained', 'ready_for_deploy', 'completed'].includes((job.status || '').toLowerCase());
+                      Boolean(job.artifact_path) &&
+                      ['trained', 'ready_for_deploy', 'completed', 'failed'].includes(normalizedStatus);
+                    const canDelete = !runningStatuses.has(normalizedStatus);
+                    const actionLabel =
+                      job.hf_model_url || job.hf_space_url ? 'Republish' : 'Publish';
                     return (
                       <tr key={job.id} className="border-b border-border align-top">
                         <td className="py-2 pr-3">
@@ -448,6 +525,20 @@ export default function FineTunePage() {
                         </td>
                         <td className="py-2 pr-3">
                           {typeof job.best_metric === 'number' ? job.best_metric.toFixed(4) : '-'}
+                        </td>
+                        <td className="py-2 pr-3 break-all">
+                          {job.hf_model_url ? (
+                            <a
+                              href={job.hf_model_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-cyan-300 hover:underline"
+                            >
+                              {job.hf_model_url}
+                            </a>
+                          ) : (
+                            <span className="text-text-secondary">-</span>
+                          )}
                         </td>
                         <td className="py-2 pr-3 break-all">
                           {job.hf_space_url ? (
@@ -464,17 +555,33 @@ export default function FineTunePage() {
                           )}
                         </td>
                         <td className="py-2 pr-3">
-                          {canDeploy ? (
-                            <button
-                              onClick={() => handleDeploy(job.id)}
-                              disabled={deployingJobId === job.id}
-                              className="px-3 py-1 rounded bg-surface-light hover:bg-hover disabled:opacity-50"
-                            >
-                              {deployingJobId === job.id ? 'Deploying...' : 'Deploy'}
-                            </button>
-                          ) : (
-                            <span className="text-text-secondary">-</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {canDeploy ? (
+                              <button
+                                onClick={() => handleDeploy(job.id)}
+                                disabled={deployingJobId === job.id || deletingJobId === job.id}
+                                className="px-3 py-1 rounded bg-surface-light hover:bg-hover disabled:opacity-50"
+                              >
+                                {deployingJobId === job.id ? 'Publishing...' : actionLabel}
+                              </button>
+                            ) : (
+                              <span className="text-text-secondary">-</span>
+                            )}
+                            {canDelete ? (
+                              <button
+                                onClick={() => handleDelete(job)}
+                                disabled={deletingJobId === job.id || deployingJobId === job.id}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded border border-border hover:bg-hover disabled:opacity-50"
+                              >
+                                {deletingJobId === job.id ? (
+                                  <LoaderCircle size={14} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={14} />
+                                )}
+                                {deletingJobId === job.id ? 'Deleting...' : 'Delete'}
+                              </button>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     );

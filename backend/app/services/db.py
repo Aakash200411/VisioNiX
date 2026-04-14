@@ -7,7 +7,7 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def get_model_by_id(model_id):
+def get_model_by_id(model_id, user_id: str | None = None):
     if not model_id:
         return None
 
@@ -21,13 +21,20 @@ def get_model_by_id(model_id):
     )
 
     rows = response.data or []
-    return rows[0] if rows else None
+    if not rows:
+        return None
+
+    model = rows[0]
+    if user_id and model.get("owner_id") not in {user_id, None} and not model.get("is_default"):
+        return None
+    return model
 
 
 def upsert_user_model(
     user_id: str,
     name: str,
     hf_space_url: str | None,
+    hf_model_url: str | None = None,
     task_type: str | None = None,
     status: str | None = None,
 ):
@@ -36,11 +43,12 @@ def upsert_user_model(
         return None
 
     supabase = get_supabase_client()
-    minimal_payload = {
+    base_payload = {
         "owner_id": user_id,
         "name": name,
         "is_default": False,
     }
+    minimal_payload = {**base_payload}
     if hf_space_url is not None:
         minimal_payload["hf_space_url"] = hf_space_url
 
@@ -50,6 +58,8 @@ def upsert_user_model(
         **minimal_payload,
         "updated_at": _utc_now_iso(),
     }
+    if hf_model_url is not None:
+        extended_payload["hf_model_url"] = hf_model_url
     if task_type:
         extended_payload["task_type"] = task_type
     if status:
@@ -97,3 +107,40 @@ def upsert_user_model(
         inserted = supabase.table("models").insert(create_payload).execute()
     inserted_rows = inserted.data or []
     return inserted_rows[0] if inserted_rows else None
+
+
+def delete_user_model(
+    user_id: str,
+    model_id: str | None = None,
+    name: str | None = None,
+) -> dict[str, object]:
+    if not user_id:
+        return {"deleted": False, "count": 0}
+
+    supabase = get_supabase_client()
+    deleted_rows = []
+
+    if model_id:
+        response = (
+            supabase.table("models")
+            .delete()
+            .eq("owner_id", user_id)
+            .eq("id", model_id)
+            .execute()
+        )
+        deleted_rows = response.data or []
+    elif name:
+        response = (
+            supabase.table("models")
+            .delete()
+            .eq("owner_id", user_id)
+            .eq("name", name)
+            .execute()
+        )
+        deleted_rows = response.data or []
+
+    return {
+        "deleted": bool(deleted_rows),
+        "count": len(deleted_rows),
+        "rows": deleted_rows,
+    }

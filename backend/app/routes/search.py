@@ -4,6 +4,7 @@ import uuid
 from flask import Blueprint, jsonify, request
 from werkzeug.utils import secure_filename
 
+from app.auth_jwt import require_supabase_auth
 from app.services.vector_store import search_vector
 
 
@@ -11,6 +12,7 @@ search_bp = Blueprint("search", __name__)
 
 
 @search_bp.route("/search", methods=["POST"])
+@require_supabase_auth
 def search():
     from app.services.feature_extractor import extract_features
 
@@ -27,6 +29,6 @@ def search():
     file.save(path)
 
     features = extract_features(path)
-    results = search_vector(features["embed"])
+    results = search_vector(features["embed"], user_id=request.user["sub"])
 
     return jsonify(results)

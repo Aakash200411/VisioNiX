@@ -75,6 +75,7 @@ def describe_image():
         image_name=filename,
         image_path=path,
         source="describe",
+        user_id=None,
     )
 
     try:
@@ -187,6 +188,7 @@ def reason_over_image():
             image_name=original_filename,
             image_path=image_path,
             source="reason",
+            user_id=None,
         )
         session_id = str(uuid.uuid4())
         session = {

@@ -92,9 +92,14 @@ def extract_features(image_path):
 # ==============================
 # NEW: HF REMOTE EXTRACTION
 # ==============================
-from gradio_client import Client, handle_file
 
 def _extract_from_hf(image_path, model_url):
+    try:
+        from gradio_client import Client, handle_file
+    except ImportError as exc:
+        raise RuntimeError(
+            "Remote model support requires the optional 'gradio_client' package."
+        ) from exc
 
     print("😊😊 Hugging Face")
 
@@ -109,16 +114,27 @@ def _extract_from_hf(image_path, model_url):
     except Exception as e:
         raise Exception(f"HF Gradio Client Error: {str(e)}")
 
-    # ----------------------------------------
-    # HF RETURNS ONLY YOLO DETECTIONS
-    # ----------------------------------------
-    detections = result.get("detections", [])
+    if not isinstance(result, dict):
+        raise ValueError("Remote model returned an unexpected response payload.")
 
-    # Extract class_ids
-    class_ids = [d["class_id"] for d in detections]
+    detections = result.get("detections", []) or []
+    predictions = result.get("predictions", []) or []
 
-    # Convert class_ids -> names using local YOLO model
-    objects = [yolo_model.names[int(cid)] for cid in class_ids]
+    objects = []
+    for detection in detections:
+        label = str(detection.get("label") or "").strip()
+        if label:
+            objects.append(label)
+
+    if not objects:
+        for prediction in predictions:
+            label = str(prediction.get("label") or "").strip()
+            if label:
+                objects.append(label)
+
+    if not objects:
+        class_ids = [d["class_id"] for d in detections if "class_id" in d]
+        objects = [yolo_model.names[int(cid)] for cid in class_ids]
 
     # ----------------------------------------
     # RUN ALL OTHER FEATURES LOCALLY
@@ -164,9 +180,7 @@ def _extract_from_hf(image_path, model_url):
     )
     clip_vector = clip_vector.detach().cpu().numpy().flatten()
 
-    # ----------------------------------------
-    # FINAL OUTPUT
-    # ----------------------------------------
+
     return _finalize_output(
         image_path,
         caption,
@@ -179,9 +193,6 @@ def _extract_from_hf(image_path, model_url):
     )
 
 
-# ==============================
-# NEW: SMART ROUTER FUNCTION
-# ==============================
 def extract_features_with_model(image_path, model=None):
     """Use HF extraction when a remote model URL is available."""
     if not model:
@@ -205,9 +216,6 @@ def extract_features_with_model(image_path, model=None):
     return _extract_from_hf(image_path, model_url)
 
 
-# ==============================
-# SHARED FINALIZER
-# ==============================
 def _finalize_output(
     image_path,
     caption,

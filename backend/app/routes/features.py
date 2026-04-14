@@ -20,8 +20,9 @@ models_bp = Blueprint("models", __name__)
 
 
 @models_bp.route("/models/<model_id>", methods=["GET"])
+@require_supabase_auth
 def fetch_model(model_id):
-    model = get_model_by_id(model_id)
+    model = get_model_by_id(model_id, user_id=request.user["sub"])
 
     if not model:
         return jsonify({"error": "Model not found"}), 404
@@ -32,8 +33,6 @@ def fetch_model(model_id):
 @features_bp.route("/extract", methods=["POST"])
 @require_supabase_auth
 def extract():
-    from app.services.feature_extractor import extract_features_with_model
-
     print("Incoming model_id:", request.form.get("model_id"))
 
     if "image" not in request.files:
@@ -46,7 +45,7 @@ def extract():
     model_id = (request.form.get("model_id") or "").strip()
     selected_model = None
     if model_id:
-        selected_model = get_model_by_id(model_id)
+        selected_model = get_model_by_id(model_id, user_id=request.user["sub"])
         if not selected_model:
             return jsonify({"error": "Model not found"}), 404
 
@@ -59,6 +58,7 @@ def extract():
     file.save(path)
 
     try:
+        from app.services.feature_extractor import extract_features_with_model
         features = extract_features_with_model(path, selected_model)
     except Exception as exc:
         return jsonify({"error": f"Model execution failed: {str(exc)}"}), 500
@@ -83,6 +83,7 @@ def extract():
         image_name=filename,
         image_path=path,
         source="extract",
+        user_id=user_id,
     )
 
     response_payload = {
@@ -96,13 +97,15 @@ def extract():
 
 
 @features_bp.route("/extractions", methods=["GET"])
+@require_supabase_auth
 def list_extractions():
-    return jsonify(list_extraction_records())
+    return jsonify(list_extraction_records(user_id=request.user["sub"]))
 
 
 @features_bp.route("/extractions/<extraction_id>", methods=["DELETE"])
+@require_supabase_auth
 def delete_extraction(extraction_id):
-    was_deleted = delete_extraction_record(extraction_id)
+    was_deleted = delete_extraction_record(extraction_id, user_id=request.user["sub"])
     if not was_deleted:
         return jsonify({"error": "Extraction not found"}), 404
     return jsonify({"status": "ok", "deleted": True, "id": extraction_id})

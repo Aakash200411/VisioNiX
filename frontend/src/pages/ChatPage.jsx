@@ -15,6 +15,9 @@ const DEFAULT_MODEL = {
   is_virtual: true,
 };
 
+const isDeployableModel = (model) =>
+  Boolean(model?.is_default || (model?.hf_space_url && String(model.hf_space_url).trim()));
+
 export default function ChatPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -102,7 +105,8 @@ export default function ChatPage() {
 
       if (error) throw error;
 
-      const combinedModels = [DEFAULT_MODEL, ...(data || [])];
+      const deployableModels = (data || []).filter(isDeployableModel);
+      const combinedModels = [DEFAULT_MODEL, ...deployableModels];
       setModels(combinedModels);
       setSelectedModelId((prev) =>
         combinedModels.some((model) => model.id === prev) ? prev : DEFAULT_MODEL.id

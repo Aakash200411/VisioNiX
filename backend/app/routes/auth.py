@@ -8,6 +8,16 @@ from app.services.supabase_client import get_supabase_client
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+def _format_auth_backend_error(exc: Exception) -> str:
+    message = str(exc)
+    if "getaddrinfo failed" in message.lower():
+        return (
+            "Supabase host could not be resolved. Check SUPABASE_URL in backend/.env "
+            "and confirm the Supabase project URL is still valid."
+        )
+    return f"unexpected error: {exc}"
+
+
 def _extract_bearer_token(auth_header: str) -> Optional[str]:
     if not auth_header:
         return None
@@ -41,7 +51,7 @@ def signup():
     except (AuthApiError, ValueError) as exc:
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
-        return jsonify({"error": f"unexpected error: {exc}"}), 500
+        return jsonify({"error": _format_auth_backend_error(exc)}), 500
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -73,7 +83,7 @@ def login():
             )
         return jsonify({"error": message}), 401
     except Exception as exc:
-        return jsonify({"error": f"unexpected error: {exc}"}), 500
+        return jsonify({"error": _format_auth_backend_error(exc)}), 500
 
 
 @auth_bp.route("/me", methods=["GET"])
@@ -89,4 +99,4 @@ def me():
     except (AuthApiError, ValueError) as exc:
         return jsonify({"error": str(exc)}), 401
     except Exception as exc:
-        return jsonify({"error": f"unexpected error: {exc}"}), 500
+        return jsonify({"error": _format_auth_backend_error(exc)}), 500

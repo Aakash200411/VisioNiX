@@ -10,6 +10,7 @@ from app.services.supabase_client import get_supabase_client
 
 ALLOWED_TASK_TYPES = {"classification", "detection", "segmentation"}
 ALLOWED_DATASET_SOURCES = {"path", "url", "manual"}
+ACTIVE_TRAINING_STATUSES = {"queued", "running", "quality_check", "deploying"}
 
 _STORE_LOCK = Lock()
 _STORE_PATH = Path(__file__).resolve().parents[2] / "logs" / "training_jobs.json"
@@ -42,6 +43,25 @@ def _save_local_jobs(jobs: list[dict[str, Any]]) -> None:
     _ensure_store_parent()
     with _STORE_PATH.open("w", encoding="utf-8") as file:
         json.dump(jobs, file, ensure_ascii=True, indent=2)
+
+
+def _job_sort_key(job: dict[str, Any]) -> str:
+    return str(job.get("updated_at") or job.get("created_at") or "")
+
+
+def _merge_job_lists(*job_lists: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for jobs in job_lists:
+        for job in jobs:
+            job_id = str(job.get("id") or "").strip()
+            if not job_id:
+                continue
+
+            existing = merged.get(job_id)
+            if existing is None or _job_sort_key(job) >= _job_sort_key(existing):
+                merged[job_id] = job
+
+    return sorted(merged.values(), key=_job_sort_key, reverse=True)
 
 
 def normalize_training_payload(payload: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
@@ -119,6 +139,7 @@ def normalize_training_payload(payload: dict[str, Any]) -> tuple[dict[str, Any] 
         quality_threshold = 0.60
 
     auto_deploy = bool(payload.get("auto_deploy", False))
+    hf_model_repo = (payload.get("hf_model_repo") or "").strip()
     hf_space_slug = (payload.get("hf_space_slug") or "").strip()
     notes = (payload.get("notes") or "").strip()
 
@@ -138,6 +159,7 @@ def normalize_training_payload(payload: dict[str, Any]) -> tuple[dict[str, Any] 
         "validation_split": validation_split,
         "quality_threshold": quality_threshold,
         "auto_deploy": auto_deploy,
+        "hf_model_repo": hf_model_repo,
         "hf_space_slug": hf_space_slug,
         "notes": notes,
     }
@@ -163,6 +185,7 @@ def create_training_job(user_id: str, payload: dict[str, Any]) -> tuple[dict[str
             "quality_threshold": payload["quality_threshold"],
         },
         "auto_deploy": payload["auto_deploy"],
+        "hf_model_repo": payload["hf_model_repo"],
         "hf_space_slug": payload["hf_space_slug"],
         "notes": payload["notes"],
         "status": "queued",
@@ -172,6 +195,8 @@ def create_training_job(user_id: str, payload: dict[str, Any]) -> tuple[dict[str
         "best_metric": None,
         "quality_gate_passed": None,
         "model_id": None,
+        "hf_model_repo_id": None,
+        "hf_model_url": None,
         "hf_space_url": None,
         "logs": [],
         "created_at": now,
@@ -195,7 +220,37 @@ def create_training_job(user_id: str, payload: dict[str, Any]) -> tuple[dict[str
     return job, "local"
 
 
+def find_matching_active_training_job(
+    user_id: str,
+    payload: dict[str, Any],
+) -> tuple[dict[str, Any] | None, str]:
+    jobs, storage = list_training_jobs(user_id)
+    model_name = str(payload.get("model_name") or "").strip().lower()
+    dataset_value = str(payload.get("dataset_value") or "").strip().lower()
+    task_type = str(payload.get("task_type") or "").strip().lower()
+
+    for job in jobs:
+        status = str(job.get("status") or "").strip().lower()
+        if status not in ACTIVE_TRAINING_STATUSES:
+            continue
+        if str(job.get("model_name") or "").strip().lower() != model_name:
+            continue
+        if str(job.get("dataset_value") or "").strip().lower() != dataset_value:
+            continue
+        if str(job.get("task_type") or "").strip().lower() != task_type:
+            continue
+        return job, storage
+
+    return None, storage
+
+
 def list_training_jobs(user_id: str) -> tuple[list[dict[str, Any]], str]:
+    local_jobs: list[dict[str, Any]] = []
+    with _STORE_LOCK:
+        local_jobs = [job for job in _load_local_jobs() if job.get("user_id") == user_id]
+
+    local_jobs.sort(key=lambda row: row.get("created_at", ""), reverse=True)
+
     try:
         supabase = get_supabase_client()
         response = (
@@ -205,15 +260,17 @@ def list_training_jobs(user_id: str) -> tuple[list[dict[str, Any]], str]:
             .order("created_at", desc=True)
             .execute()
         )
-        return response.data or [], "supabase"
+        supabase_jobs = response.data or []
+        if not supabase_jobs:
+            return local_jobs, "local" if local_jobs else "supabase"
+
+        merged_jobs = _merge_job_lists(supabase_jobs, local_jobs)
+        storage_backend = "supabase+local" if local_jobs else "supabase"
+        return merged_jobs, storage_backend
     except Exception:
         pass
 
-    with _STORE_LOCK:
-        jobs = [job for job in _load_local_jobs() if job.get("user_id") == user_id]
-
-    jobs.sort(key=lambda row: row.get("created_at", ""), reverse=True)
-    return jobs, "local"
+    return local_jobs, "local"
 
 
 def get_training_job(user_id: str, job_id: str) -> tuple[dict[str, Any] | None, str]:
@@ -274,6 +331,7 @@ def update_training_job(
         return get_training_job_any(job_id)
 
     update_payload = {**updates, "updated_at": _utc_now_iso()}
+    target_before_local_fallback = None
 
     try:
         supabase = get_supabase_client()
@@ -285,10 +343,13 @@ def update_training_job(
         if rows:
             return rows[0], "supabase"
 
-        # Some setups return empty data; fetch explicitly.
+        # Some setups return empty data; if the row exists in Supabase, fetch it explicitly.
         if user_id:
-            return get_training_job(user_id, job_id)
-        return get_training_job_any(job_id)
+            target_before_local_fallback, backend = get_training_job(user_id, job_id)
+        else:
+            target_before_local_fallback, backend = get_training_job_any(job_id)
+        if target_before_local_fallback and backend == "supabase":
+            return target_before_local_fallback, "supabase"
     except Exception:
         pass
 
@@ -328,3 +389,38 @@ def append_training_job_log(
     logs = list(job.get("logs") or [])
     logs.append({"ts": _utc_now_iso(), "message": str(message)})
     return update_training_job(job_id, {"logs": logs}, user_id=user_id)
+
+
+def delete_training_job(job_id: str, user_id: str | None = None) -> tuple[dict[str, Any] | None, str]:
+    if user_id:
+        job, backend = get_training_job(user_id, job_id)
+    else:
+        job, backend = get_training_job_any(job_id)
+
+    if not job:
+        return None, backend
+
+    try:
+        supabase = get_supabase_client()
+        query = supabase.table("training_jobs").delete().eq("id", job_id)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        query.execute()
+        backend = "supabase"
+    except Exception:
+        pass
+
+    with _STORE_LOCK:
+        jobs = _load_local_jobs()
+        filtered_jobs = []
+        for existing_job in jobs:
+            if existing_job.get("id") != job_id:
+                filtered_jobs.append(existing_job)
+                continue
+            if user_id and existing_job.get("user_id") != user_id:
+                filtered_jobs.append(existing_job)
+        if len(filtered_jobs) != len(jobs):
+            _save_local_jobs(filtered_jobs)
+            backend = "local" if backend == "local" else f"{backend}+local"
+
+    return job, backend

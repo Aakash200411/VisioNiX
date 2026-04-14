@@ -16,6 +16,7 @@ create table if not exists public.training_jobs (
 
   config_json jsonb not null default '{}'::jsonb,
   auto_deploy boolean not null default false,
+  hf_model_repo text,
   hf_space_slug text,
   notes text,
 
@@ -26,6 +27,8 @@ create table if not exists public.training_jobs (
   best_metric double precision,
   quality_gate_passed boolean,
   model_id uuid,
+  hf_model_repo_id text,
+  hf_model_url text,
   hf_space_url text,
   error text,
   logs jsonb not null default '[]'::jsonb,
@@ -39,6 +42,15 @@ create index if not exists idx_training_jobs_user_created
 
 create index if not exists idx_training_jobs_status
   on public.training_jobs (status);
+
+alter table if exists public.training_jobs
+  add column if not exists hf_model_repo text;
+
+alter table if exists public.training_jobs
+  add column if not exists hf_model_repo_id text;
+
+alter table if exists public.training_jobs
+  add column if not exists hf_model_url text;
 
 alter table public.training_jobs enable row level security;
 
@@ -54,6 +66,9 @@ create policy "users_can_manage_own_training_jobs"
 -- Safe on projects where public.models already exists with different shape.
 alter table if exists public.models
   add column if not exists hf_space_url text;
+
+alter table if exists public.models
+  add column if not exists hf_model_url text;
 
 alter table if exists public.models
   add column if not exists task_type text;

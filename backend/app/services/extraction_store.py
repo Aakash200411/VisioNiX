@@ -38,9 +38,11 @@ def add_extraction_record(
     image_name: str,
     image_path: str | None = None,
     source: str = "unknown",
+    user_id: str | None = None,
 ) -> dict:
     record = {
         "id": str(uuid.uuid4()),
+        "user_id": user_id,
         "image_name": image_name,
         "caption": str(features.get("caption", "")).strip(),
         "objects": _normalize_text_list(features.get("objects")),
@@ -63,15 +65,21 @@ def add_extraction_record(
     return deepcopy(record)
 
 
-def list_extraction_records() -> list[dict]:
+def list_extraction_records(*, user_id: str | None = None) -> list[dict]:
     with _EXTRACTION_LOCK:
-        return deepcopy(_EXTRACTIONS)
+        rows = _EXTRACTIONS
+        if user_id is not None:
+            rows = [record for record in _EXTRACTIONS if record.get("user_id") == user_id]
+        return deepcopy(rows)
 
 
-def delete_extraction_record(extraction_id: str) -> bool:
+def delete_extraction_record(extraction_id: str, *, user_id: str | None = None) -> bool:
     with _EXTRACTION_LOCK:
         for idx, record in enumerate(_EXTRACTIONS):
             if record.get("id") == extraction_id:
+                if user_id is not None and record.get("user_id") != user_id:
+                    continue
                 del _EXTRACTIONS[idx]
                 return True
     return False
+                                                                                                            

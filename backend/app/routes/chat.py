@@ -215,17 +215,6 @@ def send_message(room_id: str):
                     image_mime_type_for_reasoning = msg.get("image_mime_type") or "application/octet-stream"
                     break
 
-        user_message_payload = {
-            "room_id": room_id,
-            "role": "user",
-            "content": prompt,
-            "image_name": image_name_for_message,
-            "image_mime_type": image_mime_type_for_message,
-            "image_data": image_b64_for_message,
-        }
-        user_message_result = supabase.table("chat_messages").insert(user_message_payload).execute()
-        user_message = user_message_result.data[0] if user_message_result.data else None
-
         image_path = None
         if image_b64_for_reasoning:
             os.makedirs("uploads/chat_images", exist_ok=True)
@@ -238,15 +227,26 @@ def send_message(room_id: str):
         extracted_features = {}
         extraction_record = None
         extraction_error = None
-        if image_path and (uploaded_image or model_id):
-            from app.services.feature_extractor import extract_features_with_model
+        selected_model = None
+        if model_id:
+            selected_model = get_model_by_id(model_id, user_id=user.id)
+            if not selected_model:
+                return jsonify({"error": "Selected model not found"}), 404
 
+        user_message_payload = {
+            "room_id": room_id,
+            "role": "user",
+            "content": prompt,
+            "image_name": image_name_for_message,
+            "image_mime_type": image_mime_type_for_message,
+            "image_data": image_b64_for_message,
+        }
+        user_message_result = supabase.table("chat_messages").insert(user_message_payload).execute()
+        user_message = user_message_result.data[0] if user_message_result.data else None
+
+        if image_path and (uploaded_image or model_id):
             try:
-                selected_model = None
-                if model_id:
-                    selected_model = get_model_by_id(model_id)
-                    if not selected_model:
-                        return jsonify({"error": "Selected model not found"}), 404
+                from app.services.feature_extractor import extract_features_with_model
 
                 extracted_features = extract_features_with_model(image_path, selected_model)
                 extraction_record = add_extraction_record(
@@ -254,6 +254,7 @@ def send_message(room_id: str):
                     image_name=image_name_for_reasoning or "uploaded_image",
                     image_path=image_path,
                     source="chat",
+                    user_id=user.id,
                 )
             except Exception as exc:
                 if model_id:
