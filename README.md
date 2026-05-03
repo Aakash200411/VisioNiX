@@ -64,7 +64,8 @@ Start Backend
   python server.py
 ```
 
-
+## Publication
+- [VDI-Z](https://vzipjournal.com/volume-13-issue-4-2026/)
 ## Authors
 
 - [@Aryan Kate](https://github.com/AryanKKate)
