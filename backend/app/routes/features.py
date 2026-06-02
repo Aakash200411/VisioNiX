@@ -2,10 +2,11 @@ import os
 import uuid
 
 import numpy as np
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from werkzeug.utils import secure_filename
 
-from app.services.feature_extractor import extract_features
+from app.auth_jwt import require_supabase_auth
+from app.services.db import get_model_by_id
 from app.services.extraction_store import (
     add_extraction_record,
     delete_extraction_record,
@@ -13,37 +14,27 @@ from app.services.extraction_store import (
 )
 from app.services.vector_store import add_vector
 
-from app.services.feature_extractor import (
-    extract_features,
-    extract_features_with_model
-)
-from app.services.db import get_model_by_id
 
 features_bp = Blueprint("features", __name__)
-
-from flask import Blueprint, jsonify
-from app.services.db import get_model_by_id
-
 models_bp = Blueprint("models", __name__)
 
-@models_bp.route("/models/<model_id>", methods=["GET"])
-def fetch_model(model_id):
 
-    model = get_model_by_id(model_id)
+@models_bp.route("/models/<model_id>", methods=["GET"])
+@require_supabase_auth
+def fetch_model(model_id):
+    model = get_model_by_id(model_id, user_id=request.user["sub"])
 
     if not model:
         return jsonify({"error": "Model not found"}), 404
 
     return jsonify(model)
-from app.auth_jwt import require_supabase_auth
+
 
 @features_bp.route("/extract", methods=["POST"])
 @require_supabase_auth
 def extract():
     print("Incoming model_id:", request.form.get("model_id"))
-    # ==============================
-    # VALIDATION
-    # ==============================
+
     if "image" not in request.files:
         return jsonify({"error": "Missing image file"}), 400
 
@@ -51,44 +42,27 @@ def extract():
     if not file.filename:
         return jsonify({"error": "Empty file name"}), 400
 
-    model_id = request.form.get("model_id")
-    if not model_id:
-        return jsonify({"error": "model_id is required"}), 400
+    model_id = (request.form.get("model_id") or "").strip()
+    selected_model = None
+    if model_id:
+        selected_model = get_model_by_id(model_id, user_id=request.user["sub"])
+        if not selected_model:
+            return jsonify({"error": "Model not found"}), 404
 
-    user_id = request.user["sub"]  # Supabase user ID
+    user_id = request.user["sub"]
 
-    # ==============================
-    # FETCH MODEL (Ownership enforced)
-    # ==============================
-    model_id = request.form.get("model_id")
-
-   
-       
-
-
-
-
-
-    # ==============================
-    # SAVE IMAGE
-    # ==============================
     os.makedirs("uploads", exist_ok=True)
     filename = secure_filename(file.filename)
     unique_filename = f"{uuid.uuid4().hex}_{filename}"
     path = os.path.join("uploads", unique_filename)
     file.save(path)
 
-    # ==============================
-    # FEATURE EXTRACTION
-    # ==============================
     try:
-        features = extract_features_with_model(path, model_id)
-    except Exception as e:
-        return jsonify({"error": f"Model execution failed: {str(e)}"}), 500
+        from app.services.feature_extractor import extract_features_with_model
+        features = extract_features_with_model(path, selected_model)
+    except Exception as exc:
+        return jsonify({"error": f"Model execution failed: {str(exc)}"}), 500
 
-    # ==============================
-    # EXISTING VECTOR STORE LOGIC
-    # ==============================
     embedding_path = features["clip_embedding_path"]
     embedding = np.load(embedding_path)
 
@@ -99,7 +73,7 @@ def extract():
             "caption": features["caption"],
             "objects": features["objects"],
             "scene": features["scene_labels"],
-            "model_id": model_id,
+            "model_id": model_id or None,
             "user_id": user_id,
         },
     )
@@ -109,6 +83,7 @@ def extract():
         image_name=filename,
         image_path=path,
         source="extract",
+        user_id=user_id,
     )
 
     response_payload = {
@@ -122,13 +97,15 @@ def extract():
 
 
 @features_bp.route("/extractions", methods=["GET"])
+@require_supabase_auth
 def list_extractions():
-    return jsonify(list_extraction_records())
+    return jsonify(list_extraction_records(user_id=request.user["sub"]))
 
 
 @features_bp.route("/extractions/<extraction_id>", methods=["DELETE"])
+@require_supabase_auth
 def delete_extraction(extraction_id):
-    was_deleted = delete_extraction_record(extraction_id)
+    was_deleted = delete_extraction_record(extraction_id, user_id=request.user["sub"])
     if not was_deleted:
         return jsonify({"error": "Extraction not found"}), 404
     return jsonify({"status": "ok", "deleted": True, "id": extraction_id})

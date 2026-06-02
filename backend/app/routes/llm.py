@@ -7,7 +7,6 @@ from typing import Any
 from flask import Blueprint, jsonify, request
 from werkzeug.utils import secure_filename
 
-from app.services.feature_extractor import extract_features
 from app.services.extraction_store import add_extraction_record
 from app.services.ollama_service import generate_with_ollama, check_ollama_health
 
@@ -69,12 +68,14 @@ def describe_image():
     path = os.path.join("uploads", filename)
     file.save(path)
 
+    from app.services.feature_extractor import extract_features
     features = extract_features(path)
     extraction_record = add_extraction_record(
         features=features,
         image_name=filename,
         image_path=path,
         source="describe",
+        user_id=None,
     )
 
     try:
@@ -180,12 +181,14 @@ def reason_over_image():
         image_path = os.path.join("uploads", unique_filename)
         file.save(image_path)
 
+        from app.services.feature_extractor import extract_features
         features = extract_features(image_path)
         extraction_record = add_extraction_record(
             features=features,
             image_name=original_filename,
             image_path=image_path,
             source="reason",
+            user_id=None,
         )
         session_id = str(uuid.uuid4())
         session = {
@@ -300,3 +303,4 @@ def end_reason_session():
 
     removed = _REASONING_SESSIONS.pop(session_id, None)
     return jsonify({"status": "ok", "ended": bool(removed), "session_id": session_id})
+

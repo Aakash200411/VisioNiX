@@ -7,8 +7,8 @@ from flask import Blueprint, jsonify, request
 from supabase import AuthApiError
 from werkzeug.utils import secure_filename
 
+from app.services.db import get_model_by_id
 from app.services.extraction_store import add_extraction_record
-from app.services.feature_extractor import extract_features
 from app.services.ollama_service import generate_with_ollama
 from app.services.supabase_client import get_supabase_client
 
@@ -162,6 +162,7 @@ def send_message(room_id: str):
 
     prompt = (request.form.get("prompt") or "").strip()
     model = (request.form.get("model") or "qwen3-vl:8b").strip() or "qwen3-vl:8b"
+    model_id = (request.form.get("model_id") or "").strip()
 
     if not prompt:
         return jsonify({"error": "prompt is required"}), 400
@@ -214,17 +215,6 @@ def send_message(room_id: str):
                     image_mime_type_for_reasoning = msg.get("image_mime_type") or "application/octet-stream"
                     break
 
-        user_message_payload = {
-            "room_id": room_id,
-            "role": "user",
-            "content": prompt,
-            "image_name": image_name_for_message,
-            "image_mime_type": image_mime_type_for_message,
-            "image_data": image_b64_for_message,
-        }
-        user_message_result = supabase.table("chat_messages").insert(user_message_payload).execute()
-        user_message = user_message_result.data[0] if user_message_result.data else None
-
         image_path = None
         if image_b64_for_reasoning:
             os.makedirs("uploads/chat_images", exist_ok=True)
@@ -237,16 +227,38 @@ def send_message(room_id: str):
         extracted_features = {}
         extraction_record = None
         extraction_error = None
-        if uploaded_image and image_path:
+        selected_model = None
+        if model_id:
+            selected_model = get_model_by_id(model_id, user_id=user.id)
+            if not selected_model:
+                return jsonify({"error": "Selected model not found"}), 404
+
+        user_message_payload = {
+            "room_id": room_id,
+            "role": "user",
+            "content": prompt,
+            "image_name": image_name_for_message,
+            "image_mime_type": image_mime_type_for_message,
+            "image_data": image_b64_for_message,
+        }
+        user_message_result = supabase.table("chat_messages").insert(user_message_payload).execute()
+        user_message = user_message_result.data[0] if user_message_result.data else None
+
+        if image_path and (uploaded_image or model_id):
             try:
-                extracted_features = extract_features(image_path)
+                from app.services.feature_extractor import extract_features_with_model
+
+                extracted_features = extract_features_with_model(image_path, selected_model)
                 extraction_record = add_extraction_record(
                     features=extracted_features,
                     image_name=image_name_for_reasoning or "uploaded_image",
                     image_path=image_path,
                     source="chat",
+                    user_id=user.id,
                 )
             except Exception as exc:
+                if model_id:
+                    return jsonify({"error": f"Selected model execution failed: {str(exc)}"}), 502
                 extracted_features = {}
                 extraction_error = str(exc)
 
@@ -294,3 +306,5 @@ def send_message(room_id: str):
         ), 201
     except Exception as exc:
         return jsonify({"error": f"failed to send message: {exc}"}), 500
+
+

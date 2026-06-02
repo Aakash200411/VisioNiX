@@ -1,10 +1,12 @@
 from flask import Flask
 from flask_cors import CORS
-from app.routes.features import features_bp
+from app.routes.features import features_bp, models_bp
 from app.routes.search import search_bp
 from app.routes.auth import auth_bp
 from app.routes.llm import llm_bp
 from app.routes.chat import chat_bp
+from app.routes.training import training_bp
+
 
 def create_app():
     app = Flask(__name__)
@@ -15,10 +17,11 @@ def create_app():
         return {"status": "ok", "message": "VisioNiX backend is running"}
 
     app.register_blueprint(features_bp)
+    app.register_blueprint(models_bp)
     app.register_blueprint(search_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(llm_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(training_bp)
 
     return app
-
